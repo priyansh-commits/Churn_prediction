@@ -1,19 +1,21 @@
+```python
 import streamlit as st
 import pandas as pd
 import joblib
 
-# -----------------------------
-# Load model
-# -----------------------------
+# -----------------------------------
+# Load trained model
+# -----------------------------------
 
 model_data = joblib.load("churn_model.pkl")
 
 model = model_data["model"]
 features = model_data["features"]
 
-# -----------------------------
+
+# -----------------------------------
 # Page configuration
-# -----------------------------
+# -----------------------------------
 
 st.set_page_config(
     page_title="Telecom Churn Prediction",
@@ -24,9 +26,12 @@ st.set_page_config(
 st.title("📊 Telecom Customer Churn Prediction")
 st.write("Enter customer details to predict the likelihood of churn.")
 
-# -----------------------------
-# Inputs
-# -----------------------------
+
+# -----------------------------------
+# Customer Information
+# -----------------------------------
+
+st.header("Customer Information")
 
 age = st.number_input(
     "Age",
@@ -36,54 +41,101 @@ age = st.number_input(
 )
 
 tenure = st.number_input(
-    "Tenure",
+    "Tenure (months)",
     min_value=0,
+    max_value=100,
     value=12
+)
+
+monthly_charges = st.number_input(
+    "Monthly Charges",
+    min_value=0.0,
+    value=50.0
 )
 
 total_charges = st.number_input(
     "Total Charges",
     min_value=0.0,
-    value=1000.0
+    value=600.0
 )
 
-# Add your categorical inputs here
-# Example:
-#
-# contract = st.selectbox(
-#     "Contract",
-#     ["Month-to-month", "One year", "Two year"]
-# )
+gender = st.selectbox(
+    "Gender",
+    ["Female", "Male"]
+)
 
-# -----------------------------
+tech_support = st.selectbox(
+    "Tech Support",
+    [0, 1]
+)
+
+contract_type = st.selectbox(
+    "Contract Type",
+    ["Month-to-Month", "One-Year", "Two-Year"]
+)
+
+internet_service = st.selectbox(
+    "Internet Service",
+    ["DSL", "Fiber Optic", "No"]
+)
+
+
+# -----------------------------------
 # Prediction
-# -----------------------------
+# -----------------------------------
 
-if st.button("Predict Churn"):
+if st.button("🔮 Predict Churn"):
 
-    # Create dataframe from user input
+    # Create input dataframe using original values
     input_data = pd.DataFrame({
         "Age": [age],
         "Tenure": [tenure],
+        "MonthlyCharges": [monthly_charges],
         "TotalCharges": [total_charges],
-
-        # Add your categorical columns here
+        "TechSupport": [tech_support],
+        "Gender": [gender],
+        "ContractType": [contract_type],
+        "InternetService": [internet_service]
     })
 
-    # One-hot encode
-    input_data = pd.get_dummies(input_data)
+    # -----------------------------------
+    # Create dummy variables
+    # -----------------------------------
 
-    # Make input match training features exactly
+    input_data = pd.get_dummies(
+        input_data,
+        columns=[
+            "Gender",
+            "ContractType",
+            "InternetService"
+        ],
+        drop_first=True
+    )
+
+    # -----------------------------------
+    # Match training features
+    # -----------------------------------
+
     input_data = input_data.reindex(
         columns=features,
         fill_value=0
     )
 
+    # -----------------------------------
     # Prediction
+    # -----------------------------------
+
     prediction = model.predict(input_data)[0]
+
     probability = model.predict_proba(input_data)[0][1]
 
-    st.subheader("Result")
+    # -----------------------------------
+    # Display result
+    # -----------------------------------
+
+    st.divider()
+
+    st.subheader("Prediction Result")
 
     if prediction == 1:
         st.error("⚠️ Customer is likely to churn")
@@ -94,3 +146,4 @@ if st.button("Predict Churn"):
         "Churn Probability",
         f"{probability:.2%}"
     )
+```
